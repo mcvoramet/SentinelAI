@@ -6,7 +6,7 @@
 
 **Stop scams before they happen — not after.**
 
-[![Android](https://img.shields.io/badge/Platform-Android-3DDC84? style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/)
+
 [![Gemini AI](https://img.shields.io/badge/Powered%20by-Gemini%203-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![Made in Thailand](https://img.shields.io/badge/Made%20in-Thailand%20🇹🇭-ED1C24?style=for-the-badge)](https://github.com/mcvoramet/SentinelAI)
 
