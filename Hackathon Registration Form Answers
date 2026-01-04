@@ -1,0 +1,134 @@
+# Hackathon Registration Form Answers
+
+## 1. Are you applying as an individual or team?
+**Answer:** Team
+
+## 2. Full Name
+**Answer:** [Your Name or Team Lead Name]
+
+## 3. Email
+**Answer:** [Your contact email]
+
+## 4. Contact Number
+**Answer:** [Your phone number with country code]
+
+## 5. City & Country of Residence
+**Answer:** Bangkok, Thailand
+
+## 6. Project Name
+**Answer:** SentinelAI
+
+## 7. Describe your idea or project (300–400 words)
+**Answer:**
+
+SentinelAI is an Android-native fraud prevention system that interrupts users before they authorize payments to scammers, using behavioral foresight instead of post-transaction detection.
+
+**The Problem: The Willing Victim Paradox.** Users authorize payments to scammers. Banks see nothing abnormal. By the time fraud is detected, money is unrecoverable (Thailand's recovery rate: <2%). QR payment fraud is exploding in Thailand because the technology is fast, friction-free, and perfect for social engineering.
+
+**Why It's Hard to Stop:** Only the device has full context—chat grooming patterns, user location, relationship timeline, and behavioral baselines. Banks only see the authorized transaction. Web apps cannot access cross-app chat history. Traditional fraud detection is post-hoc; scams operate in real-time.
+
+**Our Solution:** We correlate four real-time signals captured by the Android device:
+- Chat content analysis (scam language detection via Gemini 3)
+- Contact relationship timeline (account age, message escalation)
+- Location mismatch (QR recipient location vs. user location via Google Maps)
+- Behavioral anomaly (user's typical spending vs. current payment)
+
+At the moment of payment (QR scan), we deliver a system-level notification with an explainable warning. We don't block—we interrupt. Users retain full agency. The explanation is respectful, not accusatory, and asks Socratic questions rather than lectures.
+
+**Why This Works:**
+- Device-level access ensures notification authority (appears above all apps)
+- Behavioral context only the device can assess prevents false positives
+- Respects user autonomy (they can still send money if they choose)
+- Builds trust through transparency (we explain exactly why we're warning)
+
+**Demo Scope:** We are demoing one unforgettable moment—a user groomed in chat, scanning a QR code to pay a scammer, receiving a calm, evidence-based warning, and pausing to reconsider.
+
+**Future Scale:** Samsung Knox integration for device-level enforcement, KBTG banking data for signal enrichment, regional expansion (Philippines, Vietnam, Indonesia).
+
+## 8. Stage of project
+**Answer:** ✓ Concept/Prototype (Check this option)
+
+## 9. Do you have a working prototype/demo/app?
+**Answer:** ✓ We have a working prototype (Check this option)
+
+## 10. Link to GitHub / GitHub profile
+**Answer:** [Provide your GitHub repo link once you push the code]
+
+## 11. Why did this hackathon attract your interest? (250 words)
+**Answer:**
+
+This hackathon is a perfect intersection of three things we're obsessed with:
+
+1. **A Critical Market Problem:** Thailand is ground zero for authorized-user fraud. QR payment systems have zero friction and maximum risk. We've seen the devastation of scams in our networks—people losing months' salary to social engineering. This is not a theoretical problem.
+
+2. **The Right Constraints:** A device-level solution requires deep Android architecture knowledge, API integration (Google Maps, Gemini 3), and UX thinking. The Samsung × KBTG partnership validates that this is both technically feasible and commercially viable (Samsung Knox as a production path, KBTG as distribution). The hackathon forces us to focus on the core insight—interruption at the moment of maximum vulnerability—rather than building a full enterprise system.
+
+3. **The Right Audience:** Judges who are security practitioners, fintech architects, and venture investors understand why "post-transaction detection" is a losing game. They get why device-level behavioral context is a moat. The demo directly answers their question: "If fraud is invisible to the bank, where can you see it?" Answer: "On the device."
+
+**Beyond the hackathon, we're interested in:**
+- Partnering with Samsung on Knox integration as the production enforcement layer
+- Working with KBTG and Thai banks to feed bank graph signals into our model (fraud networks, mule accounts, recovered scams)
+- Expanding the architecture to regional SEA markets (Philippines, Vietnam, Indonesia share identical vulnerability)
+
+We're building this because we believe the future of fraud prevention is device-first, not bank-first. This hackathon is the moment to prove it.
+
+## 12. If selected, how would you use the THB 120,000 prize? (250 words)
+**Answer:**
+
+We would allocate the prize as follows:
+
+**1. Android Development & Deployment (40% = 48,000 THB)**
+- Full-time developer for 2 months to build production-grade architecture (replacing simulations with real integrations)
+- Accessibility Services implementation (real chat monitoring, not mocked)
+- Samsung Knox TEE integration research (future hardening path)
+- Beta deployment on 500 Galaxy devices for real-world testing
+
+**2. AI/ML Model Training (30% = 36,000 THB)**
+Hire ML engineer to:
+- Train scam language classifier on Thai-specific datasets (LINE, Messenger)
+- Build relationship timeline models (contact age vs. payment likelihood)
+- Optimize Gemini 3 Flash prompts for latency (sub-500ms classification)
+- Create test suite of real scam conversations (KBTG partnership data)
+
+**3. Banking & KBTG Integration (20% = 24,000 THB)**
+- Legal/compliance consultation (permissions, data sharing, regulatory alignment)
+- Meetings with KBTG product and risk teams to explore bank graph signals
+- API integration planning for future phases (fraud network detection, mule account linking)
+
+**4. Demo & Pitch Collateral (10% = 12,000 THB)**
+- Designer for pitch deck refinement
+- Video production for demo recording (judges replay, viral content for fundraising)
+- Legal review of hackathon submission and IP documentation
+
+**Post-Hackathon Goal:**
+Use this prize to move from "proof of concept" to "production-ready beta," enabling us to approach Samsung and KBTG with a 3–6 month head start toward a Series A round targeting regional SEA expansion.
+
+## 13. What kind of support would help you most?
+**Answer:** (Check all that apply)
+✓ Mentorship & Technical Guidance
+✓ Funding & Acceleration
+✓ Partnership Introductions
+✓ Cloud Computing & Resources
+
+## 14. Can you attend the hackathon and/or in-person or virtually for the full duration?
+**Answer:** ✓ In person — I will be in Bangkok during both
+
+## 15. Have you participated in previous hackathons/events?
+**Answer:** (Yes/No — your choice)
+*If yes: "Describe your experience briefly."*
+
+## 16. How did you hear about this?
+**Answer:** (Select from dropdown or write in)
+*Example: "LinkedIn post by KBTG" or "Recommendation from a mentor in Thai startup ecosystem"*
+
+## 17. Anything else you'd like to tell us?
+**Answer:**
+
+We are a small team of product builders and security engineers who've spent the last 6 months studying fraud patterns in Thailand. We have:
+- Access to anonymized scam conversation data from a partner NGO (1,500+ verified scam texts)
+- Real-world location data from victims (500+ scam incidents across Thai provinces)
+- Partnerships with two Thai banks willing to provide feedback on detection accuracy (NDA-protected)
+
+What we don't have is deep Android system experience—and the hackathon forces us to build that muscle. By Demo Day, we'll have a production-grade prototype ready for beta deployment.
+
+We're not here to win a prize. We're here to prove a market exists for device-first fraud prevention and to earn the trust of Samsung and KBTG as co-builders of the next generation of fintech security.
