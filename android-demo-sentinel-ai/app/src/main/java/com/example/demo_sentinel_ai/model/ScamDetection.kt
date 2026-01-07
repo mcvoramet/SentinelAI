@@ -17,7 +17,10 @@ data class ScamDetection(
     val riskLevel: RiskLevel,
     val matchedPatterns: List<String>,
     val suspiciousText: String,
-    val screenshot: Bitmap? = null
+    val screenshot: Bitmap? = null,
+    val aiReasoning: String? = null,
+    val socraticQuestions: List<String> = emptyList(),
+    val trafficLights: Map<String, SignalStatus> = emptyMap()
 ) {
     val formattedTime: String
         get() = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
@@ -53,6 +56,10 @@ enum class RiskLevel(val displayName: String, val description: String) {
         "Critical Risk",
         "Extremely dangerous! This matches known scam patterns. Do NOT send money or personal information."
     )
+}
+
+enum class SignalStatus {
+    GREEN, YELLOW, RED
 }
 
 /**

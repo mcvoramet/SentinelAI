@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
+import com.example.demo_sentinel_ai.model.SignalStatus
 
 // Color palette for the warning screen
 private val DangerRed = Color(0xFFDC2626)
@@ -68,6 +69,8 @@ private val DangerRedDark = Color(0xFFB91C1C)
 private val DangerRedLight = Color(0xFFFEE2E2)
 private val WarningAmber = Color(0xFFF59E0B)
 private val WarningAmberLight = Color(0xFFFEF3C7)
+private val SuccessGreen = Color(0xFF10B981)
+private val SuccessGreenLight = Color(0xFFD1FAE5)
 private val SurfaceDark = Color(0xFF1F1F1F)
 private val TextPrimary = Color(0xFF111827)
 private val TextSecondary = Color(0xFF6B7280)
@@ -104,6 +107,16 @@ fun WarningScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
+            // Traffic Lights Visual
+            SignalTrafficLights(
+                signals = detection.trafficLights
+            )
+
+            // AI Reasoning Card (The "Smart" part)
+            detection.aiReasoning?.let { reasoning ->
+                AIReasoningCard(reasoning = reasoning, accentColor = accentColor)
+            }
+
             // WHO Section - The Suspect
             SuspectCard(
                 contactName = detection.chatPartner ?: "Unknown Contact",
@@ -135,6 +148,11 @@ fun WarningScreen(
             // Screenshot Evidence (if available)
             detection.screenshot?.let { bitmap ->
                 EvidenceCard(bitmap = bitmap)
+            }
+
+            // Socratic Questions (The "Behavioral" part)
+            if (detection.socraticQuestions.isNotEmpty()) {
+                SocraticQuestionsCard(questions = detection.socraticQuestions)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -606,6 +624,156 @@ private fun EvidenceCard(bitmap: Bitmap) {
                     ),
                 contentScale = ContentScale.FillWidth
             )
+        }
+    }
+}
+
+@Composable
+private fun SignalTrafficLights(
+    signals: Map<String, SignalStatus>
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SignalLight(
+            label = "CHAT",
+            status = signals["chat"] ?: SignalStatus.GREEN,
+            modifier = Modifier.weight(1f)
+        )
+        SignalLight(
+            label = "LOCATION",
+            status = signals["location"] ?: SignalStatus.GREEN,
+            modifier = Modifier.weight(1f)
+        )
+        SignalLight(
+            label = "RELATIONSHIP",
+            status = signals["relationship"] ?: SignalStatus.GREEN,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun SignalLight(
+    label: String,
+    status: SignalStatus,
+    modifier: Modifier = Modifier
+) {
+    val color = when (status) {
+        SignalStatus.GREEN -> SuccessGreen
+        SignalStatus.YELLOW -> WarningAmber
+        SignalStatus.RED -> DangerRed
+    }
+    
+    val lightColor = when (status) {
+        SignalStatus.GREEN -> SuccessGreenLight
+        SignalStatus.YELLOW -> WarningAmberLight
+        SignalStatus.RED -> DangerRedLight
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(color, CircleShape)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun AIReasoningCard(
+    reasoning: String,
+    accentColor: Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = accentColor.copy(alpha = 0.05f)),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.2f))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "GEMINI AI ANALYSIS",
+                    color = accentColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = reasoning,
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 22.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun SocraticQuestionsCard(
+    questions: List<String>
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "THINK BEFORE PROCEEDING",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            questions.forEachIndexed { index, question ->
+                Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                    Text(
+                        text = "${index + 1}.",
+                        color = DangerRed,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = question,
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
         }
     }
 }

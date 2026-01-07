@@ -1,11 +1,22 @@
 package com.example.demo_sentinel_ai.analysis
 
 import com.example.demo_sentinel_ai.model.RiskLevel
+import com.example.demo_sentinel_ai.model.SignalStatus
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Analyzes text for scam patterns using weighted keyword matching.
+ * Analyzes text for scam patterns using Gemini 3 Flash for intelligent reasoning.
  */
 object ScamPatternAnalyzer {
+
+    private val gson = Gson()
+    
+    // API Key from BuildConfig
+    private val GEMINI_API_KEY = com.example.demo_sentinel_ai.BuildConfig.GEMINI_API_KEY
 
     /**
      * Result of scam analysis.
@@ -13,14 +24,81 @@ object ScamPatternAnalyzer {
     data class AnalysisResult(
         val score: Int,
         val matchedPatterns: List<String>,
-        val riskLevel: RiskLevel
+        val riskLevel: RiskLevel,
+        val aiReasoning: String? = null,
+        val trafficLights: Map<String, SignalStatus> = emptyMap(),
+        val socraticQuestions: List<String> = emptyList()
     )
 
     /**
-     * Analyzes text for scam patterns.
+     * Gemini JSON Response Format
+     */
+    private data class GeminiResponse(
+        val risk_score: Int,
+        val risk_level: String,
+        val reasoning: String,
+        val matched_patterns: List<String>,
+        val traffic_lights: Map<String, String>,
+        val socratic_questions: List<String>
+    )
+
+    /**
+     * Analyzes text for scam patterns using Gemini 3 Flash.
      * @return Analysis result with score, matched patterns, and risk level
      */
-    fun analyze(text: String): AnalysisResult {
+    suspend fun analyzeWithGemini(text: String, context: String = ""): AnalysisResult = withContext(Dispatchers.IO) {
+        if (GEMINI_API_KEY == "YOUR_API_KEY_HERE") {
+            return@withContext analyzeLegacy(text)
+        }
+
+        val generativeModel = GenerativeModel(
+            modelName = "gemini-1.5-flash",
+            apiKey = GEMINI_API_KEY
+        )
+
+        val prompt = """
+            You are SentinelAI, a fraud prevention engine for mobile messaging apps.
+            Analyze the following chat text and context for scam patterns (romance scams, investment fraud, pig butchering, etc.).
+            
+            TEXT TO ANALYZE:
+            $text
+            
+            CONTEXT:
+            $context
+            
+            Provide your analysis in JSON format with exactly these fields:
+            - risk_score: 0-10 integer
+            - risk_level: LOW, MEDIUM, HIGH, or CRITICAL
+            - reasoning: 1-sentence explanation for a system notification
+            - matched_patterns: list of detected scam tactics (e.g. "urgency", "secrecy")
+            - traffic_lights: map of "chat", "location", "relationship" to "GREEN", "YELLOW", or "RED"
+            - socratic_questions: list of 2-3 short questions to ask the user to make them pause
+            
+            JSON ONLY.
+        """.trimIndent()
+
+        try {
+            val response = generativeModel.generateContent(prompt)
+            val jsonText = response.text?.replace("```json", "")?.replace("```", "")?.trim() ?: throw Exception("Empty response")
+            val result = gson.fromJson(jsonText, GeminiResponse::class.java)
+
+            AnalysisResult(
+                score = result.risk_score,
+                matchedPatterns = result.matched_patterns,
+                riskLevel = try { RiskLevel.valueOf(result.risk_level) } catch(e: Exception) { RiskLevel.LOW },
+                aiReasoning = result.reasoning,
+                trafficLights = result.traffic_lights.mapValues { try { SignalStatus.valueOf(it.value) } catch(e: Exception) { SignalStatus.GREEN } },
+                socraticQuestions = result.socratic_questions
+            )
+        } catch (e: Exception) {
+            analyzeLegacy(text)
+        }
+    }
+
+    /**
+     * Original legacy analysis for fallback or local checks.
+     */
+    fun analyzeLegacy(text: String): AnalysisResult {
         val lowerText = text.lowercase()
         val matched = mutableListOf<String>()
         var score = 0
@@ -43,32 +121,6 @@ object ScamPatternAnalyzer {
         return AnalysisResult(score, matched, riskLevel)
     }
 
-    /**
-     * Extracts relevant text snippets around matched patterns.
-     */
-    fun extractRelevantText(fullText: String, patterns: List<String>, contextChars: Int = 50): String {
-        val lowerText = fullText.lowercase()
-        val snippets = patterns.mapNotNull { pattern ->
-            val index = lowerText.indexOf(pattern.lowercase())
-            if (index != -1) {
-                val start = maxOf(0, index - contextChars)
-                val end = minOf(fullText.length, index + pattern.length + contextChars)
-                fullText.substring(start, end).trim()
-            } else null
-        }.toSet()
-
-        return snippets.joinToString(" ... ").take(500)
-    }
-
-    /** Risk threshold to trigger warning */
-    const val RISK_THRESHOLD = 3
-
-    /**
-     * Scam patterns with weights.
-     * - High risk (3): Strong scam indicators
-     * - Medium risk (2): Common in scams but could be legitimate
-     * - Low risk (1): Suspicious but need more context
-     */
     private val SCAM_PATTERNS = mapOf(
         // High risk (weight 3)
         "guaranteed profit" to 3,
@@ -96,4 +148,30 @@ object ScamPatternAnalyzer {
         "ไม่มีความเสี่ยง" to 1,
         "act now" to 1
     )
+
+    /**
+     * Keep the public analyze for compatibility, but mark as legacy
+     */
+    @Deprecated("Use analyzeWithGemini instead")
+    fun analyze(text: String): AnalysisResult = analyzeLegacy(text)
+
+    /**
+     * Extracts relevant text snippets around matched patterns.
+     */
+    fun extractRelevantText(fullText: String, patterns: List<String>, contextChars: Int = 50): String {
+        val lowerText = fullText.lowercase()
+        val snippets = patterns.mapNotNull { pattern ->
+            val index = lowerText.indexOf(pattern.lowercase())
+            if (index != -1) {
+                val start = maxOf(0, index - contextChars)
+                val end = minOf(fullText.length, index + pattern.length + contextChars)
+                fullText.substring(start, end).trim()
+            } else null
+        }.toSet()
+
+        return snippets.joinToString(" ... ").take(500)
+    }
+
+    /** Risk threshold to trigger warning */
+    const val RISK_THRESHOLD = 3
 }

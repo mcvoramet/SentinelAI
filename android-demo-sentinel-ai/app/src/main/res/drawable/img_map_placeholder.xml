@@ -1,0 +1,36 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="600dp"
+    android:height="300dp"
+    android:viewportWidth="600"
+    android:viewportHeight="300">
+  
+    <!-- Background -->
+    <path
+        android:pathData="M0,0h600v300h-600z"
+        android:fillColor="#1E1E1E"/>
+
+    <!-- Parks/Green Areas -->
+    <path
+        android:pathData="M50,50h100v80h-100z M400,150h150v100h-150z M200,20h80v60h-80z"
+        android:fillColor="#252F25"/>
+
+    <!-- Water/Blue Areas -->
+    <path
+        android:pathData="M450,0h150v80h-150z"
+        android:fillColor="#1A2530"/>
+
+    <!-- Streets (Main Arteries) -->
+    <path
+        android:pathData="M0,140h600v20h-600z M180,0v300h20v-300z M380,0v300h20v-300z"
+        android:fillColor="#333333"/>
+
+    <!-- Streets (Secondary) -->
+    <path
+        android:pathData="M0,60h600v10h-600z M0,220h600v10h-600z M80,0v300h10v-300z M280,0v300h10v-300z M480,0v300h10v-300z"
+        android:fillColor="#2A2A2A"/>
+    
+    <!-- Building Blocks -->
+    <path
+        android:pathData="M20,20h40v20h-40z M20,80h40v40h-40z M110,160h50v40h-50z M220,100h40v100h-40z M300,40h60v80h-60z M420,200h40v80h-40z M500,100h80v30h-80z"
+        android:fillColor="#232323"/>
+</vector>

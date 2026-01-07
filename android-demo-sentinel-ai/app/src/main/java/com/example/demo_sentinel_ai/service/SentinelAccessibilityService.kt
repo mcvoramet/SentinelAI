@@ -13,8 +13,13 @@ import com.example.demo_sentinel_ai.analysis.ScamPatternAnalyzer
 import com.example.demo_sentinel_ai.model.DetectionRepository
 import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
+import com.example.demo_sentinel_ai.model.SignalStatus
 import com.example.demo_sentinel_ai.service.detector.DetectorRegistry
 import com.example.demo_sentinel_ai.service.detector.NodeTraversal
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executor
 
 /**
@@ -24,9 +29,15 @@ class SentinelAccessibilityService : AccessibilityService() {
 
     private lateinit var notificationHelper: NotificationHelper
     private var lastAnalyzedText = ""
+    private var lastChatSnippet = ""
+    private var lastPackageName = ""
+    private var lastChatPartner: String? = null
     private var accumulatedRiskScore = 0
     private var lastWarningTime = 0L
     private var isProcessingWarning = false
+
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val mainExecutor = Executor { command -> mainHandler.post(command) }
@@ -34,6 +45,7 @@ class SentinelAccessibilityService : AccessibilityService() {
     override fun onCreate() {
         super.onCreate()
         notificationHelper = NotificationHelper(this)
+        instance = this
         Log.d(TAG, "Service started")
     }
 
@@ -75,12 +87,17 @@ class SentinelAccessibilityService : AccessibilityService() {
             val screenText = extractText(rootNode)
             if (screenText == lastAnalyzedText || screenText.length < 20) return
             lastAnalyzedText = screenText
+            lastChatSnippet = screenText
+            lastPackageName = packageName
+            lastChatPartner = chatPartner
 
-            val result = ScamPatternAnalyzer.analyze(screenText)
-            if (result.score > 0) {
-                accumulatedRiskScore += result.score
-                if (accumulatedRiskScore >= ScamPatternAnalyzer.RISK_THRESHOLD) {
-                    triggerWarning(packageName, result, screenText, chatPartner)
+            serviceScope.launch {
+                val result = ScamPatternAnalyzer.analyzeWithGemini(screenText)
+                if (result.score > 0) {
+                    accumulatedRiskScore += result.score
+                    if (accumulatedRiskScore >= ScamPatternAnalyzer.RISK_THRESHOLD) {
+                        triggerWarning(packageName, result, screenText, chatPartner)
+                    }
                 }
             }
         } finally {
@@ -151,7 +168,10 @@ class SentinelAccessibilityService : AccessibilityService() {
             riskLevel = result.riskLevel,
             matchedPatterns = result.matchedPatterns,
             suspiciousText = relevantText,
-            screenshot = screenshot
+            screenshot = screenshot,
+            aiReasoning = result.aiReasoning,
+            socraticQuestions = result.socraticQuestions,
+            trafficLights = result.trafficLights
         )
         DetectionRepository.saveDetection(detection)
 
@@ -163,10 +183,14 @@ class SentinelAccessibilityService : AccessibilityService() {
         }
 
         val message = buildString {
-            chatPartner?.let { append("Chat with: $it\n") }
-            append("Detected in ${DetectorRegistry.getAppDisplayName(packageName)}\n")
-            append("Keywords: ${result.matchedPatterns.take(3).joinToString(", ")}")
-            if (result.matchedPatterns.size > 3) append(" +${result.matchedPatterns.size - 3} more")
+            if (result.aiReasoning != null) {
+                append(result.aiReasoning)
+            } else {
+                chatPartner?.let { append("Chat with: $it\n") }
+                append("Detected in ${DetectorRegistry.getAppDisplayName(packageName)}\n")
+                append("Keywords: ${result.matchedPatterns.take(3).joinToString(", ")}")
+                if (result.matchedPatterns.size > 3) append(" +${result.matchedPatterns.size - 3} more")
+            }
         }
 
         notificationHelper.showScamWarning(
@@ -190,13 +214,52 @@ class SentinelAccessibilityService : AccessibilityService() {
     private fun resetContext() {
         accumulatedRiskScore = 0
         lastAnalyzedText = ""
+        lastChatSnippet = ""
+        lastPackageName = ""
+        lastChatPartner = null
+    }
+
+    fun triggerManualAnalysis(qrPayload: String) {
+        val snippet = lastChatSnippet
+        val pkg = if (lastPackageName.isEmpty()) "com.example.demo_sentinel_ai" else lastPackageName
+        val partner = lastChatPartner
+
+        serviceScope.launch {
+            val result = ScamPatternAnalyzer.analyzeWithGemini(snippet, "USER JUST SCANNED QR: $qrPayload")
+            triggerWarning(pkg, result, snippet, partner)
+        }
+    }
+
+    fun triggerManualChatCheck() {
+        val snippet = lastChatSnippet
+        val pkg = if (lastPackageName.isEmpty()) "com.example.demo_sentinel_ai" else lastPackageName
+        val partner = lastChatPartner
+
+        serviceScope.launch {
+            val result = ScamPatternAnalyzer.analyzeWithGemini(snippet, "USER REQUESTED MANUAL CHAT CHECK")
+            triggerWarning(pkg, result, snippet, partner)
+        }
     }
 
     override fun onInterrupt() {}
-    override fun onDestroy() { super.onDestroy(); Log.d(TAG, "Service stopped") }
+    override fun onDestroy() { 
+        super.onDestroy()
+        instance = null
+        Log.d(TAG, "Service stopped") 
+    }
 
     companion object {
         private const val TAG = "SentinelAI"
         private const val WARNING_COOLDOWN_MS = 10_000L
+        
+        private var instance: SentinelAccessibilityService? = null
+        
+        fun triggerQRAnalysis(qrPayload: String) {
+            instance?.triggerManualAnalysis(qrPayload)
+        }
+
+        fun triggerManualCheck() {
+            instance?.triggerManualChatCheck()
+        }
     }
 }

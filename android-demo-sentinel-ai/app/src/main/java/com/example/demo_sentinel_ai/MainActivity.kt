@@ -20,10 +20,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -49,6 +54,7 @@ import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
 import com.example.demo_sentinel_ai.service.NotificationHelper
 import com.example.demo_sentinel_ai.service.SentinelAccessibilityService
+import com.example.demo_sentinel_ai.ui.screens.ScannerScreen
 import com.example.demo_sentinel_ai.ui.screens.WarningScreen
 import com.example.demo_sentinel_ai.ui.theme.DemosentinelaiTheme
 
@@ -72,7 +78,14 @@ class MainActivity : ComponentActivity() {
                         Screen.Home -> {
                             HomeScreen(
                                 modifier = Modifier.padding(innerPadding),
-                                onShowWarning = { currentScreen = Screen.Warning }
+                                onShowWarning = { currentScreen = Screen.Warning },
+                                onOpenScanner = { currentScreen = Screen.Scanner }
+                            )
+                        }
+                        Screen.Scanner -> {
+                            ScannerScreen(
+                                onNavigateBack = { currentScreen = Screen.Home },
+                                modifier = Modifier.padding(innerPadding)
                             )
                         }
                         Screen.Warning -> {
@@ -107,7 +120,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private enum class Screen {
-        Home, Warning
+        Home, Warning, Scanner
     }
 
     companion object {
@@ -118,7 +131,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onShowWarning: () -> Unit
+    onShowWarning: () -> Unit,
+    onOpenScanner: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -178,6 +192,18 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // QR Scanner Button (The "Trigger")
+        QRScannerButton(onClick = onOpenScanner)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Manual Chat Check Button
+        ManualCheckButton(onClick = { 
+            SentinelAccessibilityService.triggerManualCheck()
+        })
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Setup Card
         if (!isServiceEnabled) {
             SetupCard(
@@ -209,7 +235,59 @@ fun HomeScreen(
             onShowNotification = { showTestNotification(context) }
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Debug: Trigger Breach Button
+        Button(
+            onClick = {
+                val intent = Intent(context, com.example.demo_sentinel_ai.ui.activities.BreachActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+        ) {
+            Text("Debug: Trigger Breach Overlay")
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun QRScannerButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = "Scan Payment QR",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun ManualCheckButton(onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = "Check Current Chat",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -225,25 +303,39 @@ private fun StatusCard(isEnabled: Boolean) {
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Icon(
+                imageVector = if (isEnabled) Icons.Filled.CheckCircle else Icons.Filled.Warning,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = if (isEnabled)
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                else
+                    MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = if (isEnabled) "Protection Active" else "Protection Disabled",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 color = if (isEnabled)
                     MaterialTheme.colorScheme.onPrimaryContainer
                 else
                     MaterialTheme.colorScheme.onErrorContainer
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = if (isEnabled)
                     "Monitoring LINE, WhatsApp, Messenger"
                 else
                     "Enable Accessibility Service to start",
                 style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
                 color = if (isEnabled)
                     MaterialTheme.colorScheme.onPrimaryContainer
                 else
