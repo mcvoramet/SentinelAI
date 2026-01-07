@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SentinelAI</string>
+    <string name="accessibility_service_description">SentinelAI protects you from scams by monitoring messaging apps for fraud patterns. This service reads on-screen text to identify suspicious conversations. Your data stays on your device.</string>
+</resources>
