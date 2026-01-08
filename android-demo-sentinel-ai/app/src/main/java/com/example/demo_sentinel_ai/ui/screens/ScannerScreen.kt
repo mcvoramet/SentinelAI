@@ -10,13 +10,22 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -24,15 +33,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.demo_sentinel_ai.model.DemoScenario
 import com.example.demo_sentinel_ai.service.SentinelAccessibilityService
+import com.example.demo_sentinel_ai.ui.theme.TrustBlue
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import androidx.camera.core.ExperimentalGetImage
+import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
 
-@OptIn(ExperimentalMaterial3Api::class)
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(
     onNavigateBack: () -> Unit,
+    language: DemoScenario.Language = DemoScenario.Language.ENGLISH,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -45,6 +59,9 @@ fun ScannerScreen(
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
+
+    // Demo state
+    var isAnalyzing by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -74,9 +91,11 @@ fun ScannerScreen(
         if (hasCameraPermission) {
             Box(modifier = modifier.padding(padding).fillMaxSize()) {
                 CameraPreview(onBarcodeDetected = { payload ->
-                    // Trigger the smart analysis
-                    SentinelAccessibilityService.triggerQRAnalysis(payload)
-                    onNavigateBack()
+                    if (!isAnalyzing) {
+                        isAnalyzing = true
+                        // Trigger demo Niran scenario
+                        SentinelAccessibilityService.triggerDemo(language)
+                    }
                 })
                 
                 // Scanner Overlay
@@ -86,12 +105,19 @@ fun ScannerScreen(
                         .padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Point camera at QR code",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 40.dp)
-                    )
+                    if (!isAnalyzing) {
+                        Text(
+                            text = "Point camera at QR code",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 40.dp)
+                        )
+                    }
+                }
+
+                // Analyzing State Overlay
+                if (isAnalyzing) {
+                    AnalyzingOverlay(onAnimationComplete = onNavigateBack)
                 }
             }
         } else {
@@ -102,6 +128,54 @@ fun ScannerScreen(
     }
 }
 
+@Composable
+fun AnalyzingOverlay(onAnimationComplete: () -> Unit) {
+    LaunchedEffect(Unit) {
+        delay(2000) // Fake analysis time
+        onAnimationComplete()
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .background(TrustBlue.copy(alpha = alpha), CircleShape)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Analyzing Receiver...",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Checking for fraud patterns",
+                color = Color.White.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
 fun CameraPreview(onBarcodeDetected: (String) -> Unit) {
     val context = LocalContext.current

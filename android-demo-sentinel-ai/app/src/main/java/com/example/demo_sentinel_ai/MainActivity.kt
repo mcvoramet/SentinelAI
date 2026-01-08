@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,17 +21,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -49,14 +45,31 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import com.adamglin.phosphoricons.regular.PlayCircle
+import com.example.demo_sentinel_ai.model.DemoScenario
+import com.adamglin.phosphoricons.regular.QrCode
 import com.example.demo_sentinel_ai.model.DetectionRepository
 import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
 import com.example.demo_sentinel_ai.service.NotificationHelper
 import com.example.demo_sentinel_ai.service.SentinelAccessibilityService
+import com.example.demo_sentinel_ai.ui.components.BorderedCard
+import com.example.demo_sentinel_ai.ui.components.LargeActionButton
+import com.example.demo_sentinel_ai.ui.components.TrustStatus
 import com.example.demo_sentinel_ai.ui.screens.ScannerScreen
 import com.example.demo_sentinel_ai.ui.screens.WarningScreen
+import com.example.demo_sentinel_ai.ui.theme.ActionBlue
+import com.example.demo_sentinel_ai.ui.theme.AlertRed
+import com.example.demo_sentinel_ai.ui.theme.BackgroundColor
 import com.example.demo_sentinel_ai.ui.theme.DemosentinelaiTheme
+import com.example.demo_sentinel_ai.ui.theme.SafeGreen
+import com.example.demo_sentinel_ai.ui.theme.TextPrimary
+import com.adamglin.phosphoricons.regular.ChatCircleText
 
 class MainActivity : ComponentActivity() {
 
@@ -72,19 +85,27 @@ class MainActivity : ComponentActivity() {
                 var currentScreen by remember {
                     mutableStateOf(if (showWarning) Screen.Warning else Screen.Home)
                 }
+                var currentLanguage by remember { mutableStateOf(DemoScenario.Language.ENGLISH) }
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    containerColor = BackgroundColor // Apply theme background
+                ) { innerPadding ->
                     when (currentScreen) {
                         Screen.Home -> {
                             HomeScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 onShowWarning = { currentScreen = Screen.Warning },
-                                onOpenScanner = { currentScreen = Screen.Scanner }
+                                onOpenScanner = { language -> 
+                                    currentLanguage = language
+                                    currentScreen = Screen.Scanner 
+                                }
                             )
                         }
                         Screen.Scanner -> {
                             ScannerScreen(
                                 onNavigateBack = { currentScreen = Screen.Home },
+                                language = currentLanguage,
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }
@@ -132,7 +153,7 @@ class MainActivity : ComponentActivity() {
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onShowWarning: () -> Unit,
-    onOpenScanner: () -> Unit
+    onOpenScanner: (DemoScenario.Language) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -140,6 +161,7 @@ fun HomeScreen(
     var isServiceEnabled by remember { mutableStateOf(isAccessibilityServiceEnabled(context)) }
     var hasNotificationPermission by remember { mutableStateOf(checkNotificationPermission(context)) }
     var latestDetection by remember { mutableStateOf(DetectionRepository.getLatestDetection()) }
+    var isThaiLanguage by remember { mutableStateOf(false) }
 
     // Permission launcher for notifications
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -167,77 +189,137 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = "SentinelAI",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.headlineMedium,
+            color = TextPrimary,
             fontWeight = FontWeight.Bold
         )
 
-        Text(
-            text = "Protecting you from digital fraud",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Status Card
-        StatusCard(isEnabled = isServiceEnabled)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // QR Scanner Button (The "Trigger")
-        QRScannerButton(onClick = onOpenScanner)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Manual Chat Check Button
-        ManualCheckButton(onClick = { 
-            SentinelAccessibilityService.triggerManualCheck()
-        })
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Setup Card
-        if (!isServiceEnabled) {
-            SetupCard(
-                onOpenSettings = {
-                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                }
+        // Language Toggle
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "English",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (!isThaiLanguage) FontWeight.Bold else FontWeight.Normal,
+                color = if (!isThaiLanguage) TextPrimary else TextPrimary.copy(alpha = 0.6f)
+            )
+            Switch(
+                checked = isThaiLanguage,
+                onCheckedChange = { isThaiLanguage = it },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = ActionBlue,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = ActionBlue.copy(alpha = 0.5f)
+                )
+            )
+            Text(
+                text = "Thai",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isThaiLanguage) FontWeight.Bold else FontWeight.Normal,
+                color = if (isThaiLanguage) TextPrimary else TextPrimary.copy(alpha = 0.6f)
             )
         }
 
-        // Show latest detection card if available
+        // Status Card (Hero)
+        TrustStatus(isSafe = isServiceEnabled)
+
+        // Setup Required Warning
+        if (!isServiceEnabled) {
+            BorderedCard(
+                borderColor = AlertRed,
+                onClick = {
+                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+            ) {
+                Text(
+                    text = "Setup Required",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = AlertRed,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Tap here to enable SentinelAI protection in Settings.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // Action Buttons
+        LargeActionButton(
+            text = "Scan QR Code",
+            icon = PhosphorIcons.Regular.QrCode,
+            onClick = { onOpenScanner(if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH) }
+        )
+
+
+        LargeActionButton(
+            text = "Check Current Chat",
+            icon = PhosphorIcons.Regular.ChatCircleText,
+            onClick = {
+                SentinelAccessibilityService.triggerManualCheck()
+            },
+            containerColor = ActionBlue
+        )
+
+        // Latest Alert Card
         latestDetection?.let { detection ->
-            Spacer(modifier = Modifier.height(8.dp))
-            LatestDetectionCard(
-                detection = detection,
+            BorderedCard(
+                borderColor = AlertRed,
                 onClick = onShowWarning
-            )
+            ) {
+                Text(
+                    text = "Review Latest Alert",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = AlertRed
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${detection.riskLevel.displayName} detected in ${detection.appDisplayName}. Tap for details.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Test Notification Button
-        TestNotificationButton(
-            hasPermission = hasNotificationPermission,
-            onRequestPermission = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        // Run Demo Scenario
+        LargeActionButton(
+            text = "Run Demo Scenario (Niran)",
+            icon = PhosphorIcons.Regular.PlayCircle,
+            onClick = {
+                if (hasNotificationPermission) {
+                    val language = if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH
+                    SentinelAccessibilityService.triggerDemo(language)
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
                 }
             },
-            onShowNotification = { showTestNotification(context) }
+            containerColor = SafeGreen
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Debug: Trigger Breach Button
+        // Debug Breach Button
         Button(
             onClick = {
                 val intent = Intent(context, com.example.demo_sentinel_ai.ui.activities.BreachActivity::class.java)
@@ -245,236 +327,38 @@ fun HomeScreen(
                 context.startActivity(intent)
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
         ) {
             Text("Debug: Trigger Breach Overlay")
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        
+        Spacer(modifier = Modifier.height(24.dp))
     }
-}
-
-@Composable
-private fun QRScannerButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        ),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-    ) {
-        Text(
-            text = "Scan Payment QR",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun ManualCheckButton(onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-    ) {
-        Text(
-            text = "Check Current Chat",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun StatusCard(isEnabled: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isEnabled)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = if (isEnabled) Icons.Filled.CheckCircle else Icons.Filled.Warning,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = if (isEnabled)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onErrorContainer
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = if (isEnabled) "Protection Active" else "Protection Disabled",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = if (isEnabled)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onErrorContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = if (isEnabled)
-                    "Monitoring LINE, WhatsApp, Messenger"
-                else
-                    "Enable Accessibility Service to start",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = if (isEnabled)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onErrorContainer
-            )
-        }
-    }
-}
-
-@Composable
-private fun SetupCard(onOpenSettings: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Setup Required",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "1. Tap the button below\n2. Find \"SentinelAI\" in the list\n3. Enable the service",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onOpenSettings,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Open Accessibility Settings")
-            }
-        }
-    }
-}
-
-@Composable
-private fun LatestDetectionCard(
-    detection: ScamDetection,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-        ),
-        onClick = onClick
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Latest Alert",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${detection.riskLevel.displayName} in ${detection.appDisplayName}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            Text(
-                text = "Tap to view details",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun TestNotificationButton(
-    hasPermission: Boolean,
-    onRequestPermission: () -> Unit,
-    onShowNotification: () -> Unit
-) {
-    OutlinedButton(
-        onClick = {
-            if (hasPermission) {
-                onShowNotification()
-            } else {
-                onRequestPermission()
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.secondary
-        )
-    ) {
-        Text(if (hasPermission) "Test Notification" else "Grant Notification Permission")
-    }
-
-    Text(
-        text = if (hasPermission)
-            "Tap to test if notifications work correctly"
-        else
-            "Permission required to show scam warnings",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 private fun showTestNotification(context: Context) {
     // Create a realistic mock detection for investment scam demo
-    val mockDetection = ScamDetection(
-        sourceApp = "jp.naver.line.android",
-        chatPartner = "Jennifer Wong",
-        riskScore = 12,
-        riskLevel = RiskLevel.CRITICAL,
-        matchedPatterns = listOf(
-            "guaranteed profit",
-            "การันตีกำไร",
-            "USDT",
-            "investment opportunity",
-            "ลงทุน",
-            "limited time"
-        ),
-        suspiciousText = "Hi! I'm a senior investment analyst. I have a guaranteed profit opportunity - " +
-                "50% returns monthly on USDT investments. This is limited time only. " +
-                "การันตีกำไร 100% ลงทุนขั้นต่ำ 10,000 บาท",
-        screenshot = null
+    val mockDetection = DemoScenario.getNiranScenario(DemoScenario.Language.ENGLISH)
+    val detection = ScamDetection(
+        sourceApp = mockDetection.sourceApp,
+        chatPartner = mockDetection.chatPartner,
+        riskScore = mockDetection.riskScore,
+        riskLevel = mockDetection.riskLevel,
+        matchedPatterns = mockDetection.matchedPatterns,
+        suspiciousText = mockDetection.suspiciousText,
+        screenshot = null,
+        aiReasoning = mockDetection.aiReasoning,
+        socraticQuestions = mockDetection.socraticQuestions,
+        trafficLights = mockDetection.trafficLights
     )
-    DetectionRepository.saveDetection(mockDetection)
+    DetectionRepository.saveDetection(detection)
 
     NotificationHelper(context).showScamWarning(
-        title = "CRITICAL: Scam Detected!",
-        message = "Investment scam detected",
-        matchedPatterns = mockDetection.matchedPatterns,
-        chatPartner = mockDetection.chatPartner,
+        title = "Potential Risk Detected",
+        message = "Investment scam pattern detected",
+        matchedPatterns = detection.matchedPatterns,
+        chatPartner = detection.chatPartner,
         appName = "LINE"
     )
 }

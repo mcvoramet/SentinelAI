@@ -10,6 +10,7 @@ import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.example.demo_sentinel_ai.analysis.ScamPatternAnalyzer
+import com.example.demo_sentinel_ai.model.DemoScenario
 import com.example.demo_sentinel_ai.model.DetectionRepository
 import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
@@ -241,6 +242,26 @@ class SentinelAccessibilityService : AccessibilityService() {
         }
     }
 
+    fun triggerDemoScenario(language: DemoScenario.Language) {
+        val scenarioData = DemoScenario.getNiranScenario(language)
+
+        val result = ScamPatternAnalyzer.AnalysisResult(
+            score = scenarioData.riskScore,
+            matchedPatterns = scenarioData.matchedPatterns,
+            riskLevel = scenarioData.riskLevel,
+            aiReasoning = scenarioData.aiReasoning,
+            trafficLights = scenarioData.trafficLights,
+            socraticQuestions = scenarioData.socraticQuestions
+        )
+
+        triggerWarning(
+            packageName = scenarioData.sourceApp,
+            result = result,
+            screenText = scenarioData.suspiciousText,
+            chatPartner = scenarioData.chatPartner
+        )
+    }
+
     override fun onInterrupt() {}
     override fun onDestroy() { 
         super.onDestroy()
@@ -260,6 +281,10 @@ class SentinelAccessibilityService : AccessibilityService() {
 
         fun triggerManualCheck() {
             instance?.triggerManualChatCheck()
+        }
+
+        fun triggerDemo(language: DemoScenario.Language) {
+            instance?.triggerDemoScenario(language)
         }
     }
 }

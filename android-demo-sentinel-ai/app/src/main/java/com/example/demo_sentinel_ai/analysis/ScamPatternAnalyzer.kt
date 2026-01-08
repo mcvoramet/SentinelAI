@@ -66,13 +66,15 @@ object ScamPatternAnalyzer {
             CONTEXT:
             $context
             
+            Analyze the text in its original language (English or Thai).
+            
             Provide your analysis in JSON format with exactly these fields:
             - risk_score: 0-10 integer
             - risk_level: LOW, MEDIUM, HIGH, or CRITICAL
-            - reasoning: 1-sentence explanation for a system notification
+            - reasoning: 1-sentence explanation for a system notification (in the same language as the text)
             - matched_patterns: list of detected scam tactics (e.g. "urgency", "secrecy")
             - traffic_lights: map of "chat", "location", "relationship" to "GREEN", "YELLOW", or "RED"
-            - socratic_questions: list of 2-3 short questions to ask the user to make them pause
+            - socratic_questions: list of 2-3 short questions to ask the user to make them pause (in the same language as the text)
             
             JSON ONLY.
         """.trimIndent()
@@ -125,28 +127,37 @@ object ScamPatternAnalyzer {
         // High risk (weight 3)
         "guaranteed profit" to 3,
         "การันตีกำไร" to 3,
+        "กำไรแน่นอน" to 3,
         "send me money" to 3,
         "โอนเงิน" to 3,
         "don't tell anyone" to 3,
         "อย่าบอกใคร" to 3,
+        "ห้ามบอกใคร" to 3,
+        "เป็นความลับ" to 3,
 
         // Medium risk (weight 2)
         "investment opportunity" to 2,
         "ลงทุน" to 2,
+        "โอกาสการลงทุน" to 2,
         "USDT" to 2,
         "crypto" to 2,
+        "คริปโต" to 2,
         "urgent" to 2,
         "รีบด่วน" to 2,
+        "ด่วนที่สุด" to 2,
         "limited time" to 2,
+        "เวลาจำกัด" to 2,
         "Western Union" to 2,
 
         // Lower risk (weight 1)
         "passive income" to 1,
         "รายได้เสริม" to 1,
         "100% safe" to 1,
+        "ปลอดภัย 100%" to 1,
         "no risk" to 1,
         "ไม่มีความเสี่ยง" to 1,
-        "act now" to 1
+        "act now" to 1,
+        "สมัครเลย" to 1
     )
 
     /**

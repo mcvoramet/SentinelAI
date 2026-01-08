@@ -58,6 +58,10 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     
+    // Phosphor Icons & Google Fonts
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.6.1")
+    implementation("com.adamglin:phosphor-icon:1.0.0")
+    
     // Coil
     implementation(libs.coil.compose)
 
