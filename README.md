@@ -76,6 +76,11 @@ Banks see a normal payment.  The user authorized it. The device authenticated it
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## 🤖 Diagram
+
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/2371d09f-8615-4516-8c69-f3ba84567ceb" />
+
+
 ---
 
 ## ⚡ How It Works — The Demo Moment (90 seconds)
