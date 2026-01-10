@@ -6,6 +6,7 @@
 
 **Stop scams before they happen — not after.**
 
+[![Watch the Demo](https://img.shields.io/badge/▶️_Watch_Demo-Tella-blue? style=for-the-badge)](https://www.tella.tv/video/vid_cmk807uhp022z04jo333102zc)
 
 [![Gemini AI](https://img.shields.io/badge/Powered%20by-Gemini%203-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![Made in Thailand](https://img.shields.io/badge/Made%20in-Thailand%20🇹🇭-ED1C24?style=for-the-badge)](https://github.com/mcvoramet/SentinelAI)
