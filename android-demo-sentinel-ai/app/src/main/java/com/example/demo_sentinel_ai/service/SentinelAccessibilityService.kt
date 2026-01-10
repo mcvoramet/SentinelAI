@@ -2,6 +2,7 @@ package com.example.demo_sentinel_ai.service
 
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -172,6 +173,7 @@ class SentinelAccessibilityService : AccessibilityService() {
             screenshot = screenshot,
             aiReasoning = result.aiReasoning,
             socraticQuestions = result.socraticQuestions,
+            interactiveQuestions = result.interactiveQuestions,
             trafficLights = result.trafficLights
         )
         DetectionRepository.saveDetection(detection)
@@ -251,13 +253,55 @@ class SentinelAccessibilityService : AccessibilityService() {
             riskLevel = scenarioData.riskLevel,
             aiReasoning = scenarioData.aiReasoning,
             trafficLights = scenarioData.trafficLights,
-            socraticQuestions = scenarioData.socraticQuestions
+            socraticQuestions = scenarioData.socraticQuestions,
+            interactiveQuestions = scenarioData.interactiveQuestions
         )
 
-        triggerWarning(
+        // Load mock screenshot if available
+        val screenshot = scenarioData.mockScreenshotResId?.let { resId ->
+            try {
+                BitmapFactory.decodeResource(resources, resId)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        saveAndNotify(
             packageName = scenarioData.sourceApp,
             result = result,
-            screenText = scenarioData.suspiciousText,
+            relevantText = scenarioData.suspiciousText,
+            screenshot = screenshot,
+            chatPartner = scenarioData.chatPartner
+        )
+    }
+
+    fun triggerQRDemoScenario(language: DemoScenario.Language) {
+        val scenarioData = DemoScenario.getQRScenario(language)
+
+        val result = ScamPatternAnalyzer.AnalysisResult(
+            score = scenarioData.riskScore,
+            matchedPatterns = scenarioData.matchedPatterns,
+            riskLevel = scenarioData.riskLevel,
+            aiReasoning = scenarioData.aiReasoning,
+            trafficLights = scenarioData.trafficLights,
+            socraticQuestions = scenarioData.socraticQuestions,
+            interactiveQuestions = scenarioData.interactiveQuestions
+        )
+
+        // Load mock screenshot if available
+        val screenshot = scenarioData.mockScreenshotResId?.let { resId ->
+            try {
+                BitmapFactory.decodeResource(resources, resId)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        saveAndNotify(
+            packageName = scenarioData.sourceApp,
+            result = result,
+            relevantText = scenarioData.suspiciousText,
+            screenshot = screenshot,
             chatPartner = scenarioData.chatPartner
         )
     }
@@ -285,6 +329,10 @@ class SentinelAccessibilityService : AccessibilityService() {
 
         fun triggerDemo(language: DemoScenario.Language) {
             instance?.triggerDemoScenario(language)
+        }
+
+        fun triggerQRDemo(language: DemoScenario.Language) {
+            instance?.triggerQRDemoScenario(language)
         }
     }
 }

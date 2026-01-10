@@ -27,7 +27,8 @@ object ScamPatternAnalyzer {
         val riskLevel: RiskLevel,
         val aiReasoning: String? = null,
         val trafficLights: Map<String, SignalStatus> = emptyMap(),
-        val socraticQuestions: List<String> = emptyList()
+        val socraticQuestions: List<String> = emptyList(),
+        val interactiveQuestions: List<com.example.demo_sentinel_ai.model.InteractiveQuestion> = emptyList()
     )
 
     /**

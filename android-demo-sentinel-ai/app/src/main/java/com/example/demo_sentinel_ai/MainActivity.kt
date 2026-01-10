@@ -13,9 +13,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +27,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,30 +38,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import com.adamglin.phosphoricons.regular.ChatCircleText
 import com.adamglin.phosphoricons.regular.PlayCircle
-import com.example.demo_sentinel_ai.model.DemoScenario
 import com.adamglin.phosphoricons.regular.QrCode
+import com.example.demo_sentinel_ai.model.DemoScenario
 import com.example.demo_sentinel_ai.model.DetectionRepository
-import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
 import com.example.demo_sentinel_ai.service.NotificationHelper
 import com.example.demo_sentinel_ai.service.SentinelAccessibilityService
 import com.example.demo_sentinel_ai.ui.components.BorderedCard
-import com.example.demo_sentinel_ai.ui.components.LargeActionButton
+import com.example.demo_sentinel_ai.ui.components.DashboardSection
+import com.example.demo_sentinel_ai.ui.components.SquareActionButton
 import com.example.demo_sentinel_ai.ui.components.TrustStatus
 import com.example.demo_sentinel_ai.ui.screens.ScannerScreen
 import com.example.demo_sentinel_ai.ui.screens.WarningScreen
@@ -69,7 +72,6 @@ import com.example.demo_sentinel_ai.ui.theme.BackgroundColor
 import com.example.demo_sentinel_ai.ui.theme.DemosentinelaiTheme
 import com.example.demo_sentinel_ai.ui.theme.SafeGreen
 import com.example.demo_sentinel_ai.ui.theme.TextPrimary
-import com.adamglin.phosphoricons.regular.ChatCircleText
 
 class MainActivity : ComponentActivity() {
 
@@ -192,44 +194,54 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(32.dp) // Increased spacing for cleaner sections
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = "SentinelAI",
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.Bold
-        )
-
-        // Language Toggle
+        // Header Row
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "English",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (!isThaiLanguage) FontWeight.Bold else FontWeight.Normal,
-                color = if (!isThaiLanguage) TextPrimary else TextPrimary.copy(alpha = 0.6f)
-            )
-            Switch(
-                checked = isThaiLanguage,
-                onCheckedChange = { isThaiLanguage = it },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = ActionBlue,
-                    uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = ActionBlue.copy(alpha = 0.5f)
+                text = "SentinelAI",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 28.sp,
+                    letterSpacing = (-1).sp,
+                    fontFamily = FontFamily.SansSerif,
+                    color = TextPrimary
                 )
             )
-            Text(
-                text = "Thai",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isThaiLanguage) FontWeight.Bold else FontWeight.Normal,
-                color = if (isThaiLanguage) TextPrimary else TextPrimary.copy(alpha = 0.6f)
-            )
+
+            // Language Toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "EN",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (!isThaiLanguage) FontWeight.Bold else FontWeight.Normal,
+                    color = if (!isThaiLanguage) TextPrimary else TextPrimary.copy(alpha = 0.6f)
+                )
+                Switch(
+                    checked = isThaiLanguage,
+                    onCheckedChange = { isThaiLanguage = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = ActionBlue,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = ActionBlue.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.scale(0.8f) // Make it slightly smaller
+                )
+                Text(
+                    text = "TH",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (isThaiLanguage) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isThaiLanguage) TextPrimary else TextPrimary.copy(alpha = 0.6f)
+                )
+            }
         }
 
         // Status Card (Hero)
@@ -260,23 +272,6 @@ fun HomeScreen(
             }
         }
 
-        // Action Buttons
-        LargeActionButton(
-            text = "Scan QR Code",
-            icon = PhosphorIcons.Regular.QrCode,
-            onClick = { onOpenScanner(if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH) }
-        )
-
-
-        LargeActionButton(
-            text = "Check Current Chat",
-            icon = PhosphorIcons.Regular.ChatCircleText,
-            onClick = {
-                SentinelAccessibilityService.triggerManualCheck()
-            },
-            containerColor = ActionBlue
-        )
-
         // Latest Alert Card
         latestDetection?.let { detection ->
             BorderedCard(
@@ -300,35 +295,88 @@ fun HomeScreen(
             }
         }
 
+        // Quick Actions Section
+        DashboardSection(title = "Quick Actions") {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SquareActionButton(
+                    text = "Scan QR",
+                    icon = PhosphorIcons.Regular.QrCode,
+                    onClick = { onOpenScanner(if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH) },
+                    modifier = Modifier.weight(1f)
+                )
+                SquareActionButton(
+                    text = "Check Chat",
+                    icon = PhosphorIcons.Regular.ChatCircleText,
+                    onClick = {
+                        SentinelAccessibilityService.triggerManualCheck()
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Demo Scenarios Section
+        DashboardSection(title = "Demo Scenarios") {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SquareActionButton(
+                    text = "Niran Demo",
+                    icon = PhosphorIcons.Regular.PlayCircle,
+                    onClick = {
+                        if (hasNotificationPermission) {
+                            val language = if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH
+                            SentinelAccessibilityService.triggerDemo(language)
+                        } else {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    contentColor = SafeGreen
+                )
+                SquareActionButton(
+                    text = "QR Demo",
+                    icon = PhosphorIcons.Regular.QrCode,
+                    onClick = {
+                        if (hasNotificationPermission) {
+                            val language = if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH
+                            SentinelAccessibilityService.triggerQRDemo(language)
+                        } else {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    contentColor = SafeGreen
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
-        // Run Demo Scenario
-        LargeActionButton(
-            text = "Run Demo Scenario (Niran)",
-            icon = PhosphorIcons.Regular.PlayCircle,
-            onClick = {
-                if (hasNotificationPermission) {
-                    val language = if (isThaiLanguage) DemoScenario.Language.THAI else DemoScenario.Language.ENGLISH
-                    SentinelAccessibilityService.triggerDemo(language)
-                } else {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                }
-            },
-            containerColor = SafeGreen
-        )
-
-        // Debug Breach Button
+        // Debug Breach Button (Low profile)
         Button(
             onClick = {
                 val intent = Intent(context, com.example.demo_sentinel_ai.ui.activities.BreachActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
             },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = AlertRed),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AlertRed.copy(alpha = 0.1f),
+                contentColor = AlertRed
+            ),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp)
         ) {
             Text("Debug: Trigger Breach Overlay")
         }

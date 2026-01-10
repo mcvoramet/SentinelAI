@@ -20,6 +20,7 @@ data class ScamDetection(
     val screenshot: Bitmap? = null,
     val aiReasoning: String? = null,
     val socraticQuestions: List<String> = emptyList(),
+    val interactiveQuestions: List<InteractiveQuestion> = emptyList(),
     val trafficLights: Map<String, SignalStatus> = emptyMap()
 ) {
     val formattedTime: String
@@ -38,6 +39,13 @@ data class ScamDetection(
             else -> sourceApp
         }
 }
+
+data class InteractiveQuestion(
+    val questionText: String,
+    val isSafeAnswerYes: Boolean, // True if "Yes" is the safe answer, False if "No" is safe
+    val feedbackSafe: String,
+    val feedbackRisk: String
+)
 
 enum class RiskLevel(val displayName: String, val description: String) {
     LOW(
