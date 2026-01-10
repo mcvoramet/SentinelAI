@@ -1,0 +1,29 @@
+# Android
+**/local.properties
+**/.gradle/
+**/.kotlin/
+**/build/
+**/captures/
+**/.externalNativeBuild
+.cxx/
+*.apk
+*.aar
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# BMAD & AI
+.agent/
+.claude/
+.cursor/rules/bmad/_bmad-output/
+_bmad/
+_bmad-output/
+
+# OS
+.DS_Store
+
+# Misc
+"Google Gemini Generated Image.png"
+local.properties

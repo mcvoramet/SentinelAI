@@ -33,6 +33,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,6 +47,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,8 +64,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo_sentinel_ai.model.InteractiveQuestion
 import com.example.demo_sentinel_ai.model.RiskLevel
 import com.example.demo_sentinel_ai.model.ScamDetection
+import com.example.demo_sentinel_ai.model.SignalStatus
+import com.example.demo_sentinel_ai.ui.theme.ActionBlue
 
 // Color palette for the warning screen
 private val DangerRed = Color(0xFFDC2626)
@@ -68,6 +76,8 @@ private val DangerRedDark = Color(0xFFB91C1C)
 private val DangerRedLight = Color(0xFFFEE2E2)
 private val WarningAmber = Color(0xFFF59E0B)
 private val WarningAmberLight = Color(0xFFFEF3C7)
+private val SuccessGreen = Color(0xFF10B981)
+private val SuccessGreenLight = Color(0xFFD1FAE5)
 private val SurfaceDark = Color(0xFF1F1F1F)
 private val TextPrimary = Color(0xFF111827)
 private val TextSecondary = Color(0xFF6B7280)
@@ -104,6 +114,16 @@ fun WarningScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
+            // Traffic Lights Visual
+            SignalTrafficLights(
+                signals = detection.trafficLights
+            )
+
+            // AI Reasoning Card (The "Smart" part)
+            detection.aiReasoning?.let { reasoning ->
+                AIReasoningCard(reasoning = reasoning, accentColor = accentColor)
+            }
+
             // WHO Section - The Suspect
             SuspectCard(
                 contactName = detection.chatPartner ?: "Unknown Contact",
@@ -137,6 +157,18 @@ fun WarningScreen(
                 EvidenceCard(bitmap = bitmap)
             }
 
+            // Interactive Wizard or Socratic Questions
+            if (detection.interactiveQuestions.isNotEmpty()) {
+                WizardQuestionCard(
+                    questions = detection.interactiveQuestions,
+                    onComplete = {
+                        // Optional: Could hide the section or just leave it closed/summarized
+                    }
+                )
+            } else if (detection.socraticQuestions.isNotEmpty()) {
+                SocraticQuestionsCard(questions = detection.socraticQuestions)
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Action Button
@@ -146,7 +178,8 @@ fun WarningScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SurfaceDark
+                    containerColor = DangerRed,
+                    contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -606,6 +639,381 @@ private fun EvidenceCard(bitmap: Bitmap) {
                     ),
                 contentScale = ContentScale.FillWidth
             )
+        }
+    }
+}
+
+@Composable
+private fun SignalTrafficLights(
+    signals: Map<String, SignalStatus>
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SignalLight(
+            label = "CHAT",
+            status = signals["chat"] ?: SignalStatus.GREEN,
+            modifier = Modifier.weight(1f)
+        )
+        SignalLight(
+            label = "LOCATION",
+            status = signals["location"] ?: SignalStatus.GREEN,
+            modifier = Modifier.weight(1f)
+        )
+        SignalLight(
+            label = "RELATIONSHIP",
+            status = signals["relationship"] ?: SignalStatus.GREEN,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun SignalLight(
+    label: String,
+    status: SignalStatus,
+    modifier: Modifier = Modifier
+) {
+    val color = when (status) {
+        SignalStatus.GREEN -> SuccessGreen
+        SignalStatus.YELLOW -> WarningAmber
+        SignalStatus.RED -> DangerRed
+    }
+    
+    val lightColor = when (status) {
+        SignalStatus.GREEN -> SuccessGreenLight
+        SignalStatus.YELLOW -> WarningAmberLight
+        SignalStatus.RED -> DangerRedLight
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(color, CircleShape)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun AIReasoningCard(
+    reasoning: String,
+    accentColor: Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = accentColor.copy(alpha = 0.05f)),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.2f))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "GEMINI AI ANALYSIS",
+                    color = accentColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = reasoning,
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 22.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun SocraticQuestionsCard(
+    questions: List<String>
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "THINK BEFORE PROCEEDING",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            questions.forEachIndexed { index, question ->
+                Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                    Text(
+                        text = "${index + 1}.",
+                        color = DangerRed,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = question,
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WizardQuestionCard(
+    questions: List<InteractiveQuestion>,
+    onComplete: () -> Unit = {}
+) {
+    var currentIndex by remember { mutableStateOf(0) }
+    var selectedAnswer by remember { mutableStateOf<Boolean?>(null) } // true for Yes, false for No
+    var isComplete by remember { mutableStateOf(false) }
+    var riskCount by remember { mutableStateOf(0) }
+
+    if (isComplete) {
+        // Summary View
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "ASSESSMENT COMPLETE",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                val isHighRisk = riskCount > 0
+                val icon = if (isHighRisk) Icons.Filled.Warning else Icons.Filled.CheckCircle
+                val iconColor = if (isHighRisk) DangerRed else SuccessGreen
+                
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(iconColor.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = if (isHighRisk) "Potential Risks Identified" else "No Obvious Risks Found",
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = if (isHighRisk) 
+                        "You identified $riskCount risk factors in this conversation. Proceed with extreme caution." 
+                        else "Based on your answers, this interaction seems safer, but always remain vigilant.",
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 20.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = onComplete, // Action to close/collapse
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color.Black, RoundedCornerShape(100)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Text("Close Wizard")
+                }
+            }
+        }
+        return
+    }
+
+    val currentQuestion = questions.getOrNull(currentIndex) ?: return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                 Text(
+                    text = "SECURITY CHECK",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "${currentIndex + 1}/${questions.size}",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Question
+            Text(
+                text = currentQuestion.questionText,
+                color = TextPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 24.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            if (selectedAnswer == null) {
+                // Yes / No Buttons
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = { selectedAnswer = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF), contentColor = ActionBlue)
+                    ) {
+                        Text("Yes")
+                    }
+                    Button(
+                        onClick = { selectedAnswer = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF), contentColor = ActionBlue)
+                    ) {
+                        Text("No")
+                    }
+                }
+            } else {
+                // Feedback
+                val isSafe = (selectedAnswer == true && currentQuestion.isSafeAnswerYes) ||
+                             (selectedAnswer == false && !currentQuestion.isSafeAnswerYes)
+                
+                val feedbackColor = if (isSafe) SuccessGreen else DangerRed
+                val feedbackBg = if (isSafe) SuccessGreenLight else DangerRedLight
+                val feedbackText = if (isSafe) currentQuestion.feedbackSafe else currentQuestion.feedbackRisk
+                val icon = if (isSafe) Icons.Filled.CheckCircle else Icons.Filled.Cancel
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(feedbackBg, RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(icon, contentDescription = null, tint = feedbackColor, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isSafe) "Correct" else "Warning",
+                            color = feedbackColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = feedbackText, color = TextPrimary, fontSize = 14.sp)
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Show Next button only if not the last question
+                if (currentIndex < questions.size - 1) {
+                    Button(
+                        onClick = {
+                            if (!isSafe) riskCount++
+                            currentIndex++
+                            selectedAnswer = null
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Black, RoundedCornerShape(100)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        )
+                    ) {
+                         Text("Next Question")
+                    }
+                } else {
+                    // Last question answered
+                     Button(
+                        onClick = { 
+                            if (!isSafe) riskCount++
+                            isComplete = true
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Black, RoundedCornerShape(100)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        )
+                    ) {
+                         Text("Finish Assessment")
+                    }
+                }
+            }
         }
     }
 }

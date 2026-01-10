@@ -73,27 +73,27 @@ class NotificationHelper(private val context: Context) {
         )
 
         // Build compact content text - show most critical info first
-        val compactText = chatPartner?.let { "⚠️ $it may be a scammer" }
-            ?: "Suspicious activity detected"
+        val compactText = chatPartner?.let { "Risk detected: $it" }
+            ?: "Potential fraud risk detected"
 
         // Build expanded content with more details
         val expandedStyle = NotificationCompat.InboxStyle()
             .setBigContentTitle(title)
 
         chatPartner?.let {
-            expandedStyle.addLine("👤 Suspect: $it")
+            expandedStyle.addLine("Suspect: $it")
         }
         appName?.let {
-            expandedStyle.addLine("📱 App: $it")
+            expandedStyle.addLine("App: $it")
         }
         if (matchedPatterns.isNotEmpty()) {
-            expandedStyle.addLine("🚨 Keywords: ${matchedPatterns.take(4).joinToString(", ")}")
+            expandedStyle.addLine("Keywords detected: ${matchedPatterns.take(4).joinToString(", ")}")
             if (matchedPatterns.size > 4) {
-                expandedStyle.addLine("   +${matchedPatterns.size - 4} more suspicious patterns")
+                expandedStyle.addLine("And ${matchedPatterns.size - 4} other risk indicators.")
             }
         }
         expandedStyle.addLine("")
-        expandedStyle.addLine("Tap to see full analysis →")
+        expandedStyle.addLine("Tap to review risk analysis.")
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_warning)
@@ -102,7 +102,7 @@ class NotificationHelper(private val context: Context) {
             .setContentText(compactText)
             .setStyle(expandedStyle)
             .setSubText(appName)
-            .setColor(Color.parseColor("#DC2626"))
+            .setColor(Color.parseColor("#BE123C")) // AlertRed from theme
             .setColorized(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
